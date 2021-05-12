@@ -288,3 +288,41 @@ function isAdmin(uid){
 }
 
 ```
+
+## ///////////////////////////////////////////////////
+
+### Chat Example
+
+// chatImages
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /messages/{docId} {
+ 			allow read: if request.auth.uid != null;
+      allow create: if canCreateMessage();
+    }
+
+  	function canCreateMessage() {
+      let isSignedIn = request.auth.uid != null;
+      let isOwner = request.auth.uid == request.resource.data.uid;
+      let isNotTooLong = request.resource.data.text.size() < 255;
+      let isNow = request.time == request.resource.data.createdAt;
+
+      let isNotBanned = exists(
+      	/databases/$(database)/documents/banned/$(request.auth.uid)
+      ) == false;
+
+      return isSignedIn && isOwner && isNotTooLong && isNow && isNotBanned;
+    }
+
+  }
+}
+
+```
